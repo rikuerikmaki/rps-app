@@ -19,6 +19,11 @@ const labels: Record<RpsItem, string> = {
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 type MessageKind = 'idle' | 'loading' | 'success' | 'error';
+type BattleView = {
+  playerChoice: RpsItem;
+  opponentChoice: RpsItem;
+  winner: RpsItem | null;
+};
 
 export function App() {
   const api = useMemo(() => new RpsApiClient(apiBaseUrl), []);
@@ -28,12 +33,14 @@ export function App() {
   const [messageKind, setMessageKind] = useState<MessageKind>('idle');
   const [loading, setLoading] = useState(false);
   const [roundSummary, setRoundSummary] = useState<string | null>(null);
+  const [battle, setBattle] = useState<BattleView | null>(null);
 
   async function startSession() {
     setLoading(true);
     setMessageKind('loading');
     setMessage(`Starting session with ${labels[choice]}...`);
     setRoundSummary(null);
+    setBattle(null);
     try {
       const created = await api.startSession(choice);
       setSession(created);
@@ -51,6 +58,12 @@ export function App() {
     if (session == null) return;
     const winner = roundWinner(session.playerChoice, opponentChoice);
 
+    setBattle({
+      playerChoice: session.playerChoice,
+      opponentChoice,
+      winner,
+    });
+
     if (winner == null) {
       setMessageKind('success');
       setRoundSummary(
@@ -67,6 +80,7 @@ export function App() {
     );
     setMessage(`Saving ${labels[winner]} as winner...`);
     try {
+      await delay(1700);
       const completed = await api.completeSession(session.id, completionPayloadFor(winner));
       setSession(completed);
       setMessageKind('success');
@@ -98,6 +112,7 @@ export function App() {
               onClick={() => setChoice(item)}
               type="button"
             >
+              <Character item={item} />
               <span>{labels[item]}</span>
               <small>{ruleText(item)}</small>
             </button>
@@ -109,6 +124,8 @@ export function App() {
             {session == null ? 'Start session' : 'Start new session'}
           </button>
         </div>
+
+        {battle == null ? null : <BattleScene battle={battle} />}
 
         <div className={`status ${messageKind}`} role="status">
           {message}
@@ -162,6 +179,104 @@ export function App() {
   );
 }
 
+function BattleScene({ battle }: { battle: BattleView }) {
+  const resultText =
+    battle.winner == null
+      ? 'Tie. Neither side falls.'
+      : `${labels[battle.winner]} defeats ${
+          battle.winner === battle.playerChoice
+            ? labels[battle.opponentChoice]
+            : labels[battle.playerChoice]
+        }.`;
+
+  return (
+    <div className="battleScene" aria-label="Rock paper scissors battleground">
+      <div className="battleGround">
+        <BattleToken
+          item={battle.playerChoice}
+          label="You"
+          side="left"
+          outcome={battleOutcome(battle.playerChoice, battle.winner)}
+        />
+        <div className="impact">VS</div>
+        <BattleToken
+          item={battle.opponentChoice}
+          label="Opponent"
+          side="right"
+          outcome={battleOutcome(battle.opponentChoice, battle.winner)}
+        />
+      </div>
+      <p className="battleResult">{resultText}</p>
+    </div>
+  );
+}
+
+function BattleToken({
+  item,
+  label,
+  side,
+  outcome,
+}: {
+  item: RpsItem;
+  label: string;
+  side: 'left' | 'right';
+  outcome: 'winner' | 'loser' | 'tie';
+}) {
+  return (
+    <div className={`battleToken ${item} ${side} ${outcome}`}>
+      <Character item={item} compact />
+      <strong>{labels[item]}</strong>
+      <small>{label}</small>
+    </div>
+  );
+}
+
+function Character({ item, compact = false }: { item: RpsItem; compact?: boolean }) {
+  const className = `character ${compact ? 'compact ' : ''}${item}Character`;
+
+  if (item === 'rock') {
+    return (
+      <span className={className} aria-hidden="true">
+        <span className="rockBody">
+          <span className="face eye left" />
+          <span className="face eye right" />
+          <span className="face mouth" />
+        </span>
+      </span>
+    );
+  }
+
+  if (item === 'paper') {
+    return (
+      <span className={className} aria-hidden="true">
+        <span className="paperBody">
+          <span className="paperFold" />
+          <span className="face eye left" />
+          <span className="face eye right" />
+          <span className="face mouth" />
+        </span>
+      </span>
+    );
+  }
+
+  return (
+    <span className={className} aria-hidden="true">
+      <span className="scissorBlade bladeLeft" />
+      <span className="scissorBlade bladeRight" />
+      <span className="scissorHandle handleLeft" />
+      <span className="scissorHandle handleRight" />
+      <span className="scissorPivot" />
+      <span className="face eye left" />
+      <span className="face eye right" />
+    </span>
+  );
+}
+
+function battleOutcome(item: RpsItem, winner: RpsItem | null): 'winner' | 'loser' | 'tie' {
+  if (winner == null) return 'tie';
+  return item === winner ? 'winner' : 'loser';
+}
+
 function ruleText(item: RpsItem): string {
   if (item === 'rock') return 'beats scissors';
   if (item === 'paper') return 'beats rock';
@@ -172,4 +287,10 @@ function errorMessage(error: unknown): string {
   if (error instanceof ApiError) return error.message;
   if (error instanceof Error) return error.message;
   return 'Unexpected frontend error.';
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 }
