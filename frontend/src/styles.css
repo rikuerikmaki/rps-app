@@ -93,26 +93,67 @@ h2 {
 
 .choiceGrid {
   display: grid;
-  gap: 10px;
+  gap: 18px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-top: 24px;
+  margin-top: 30px;
 }
 
 .choice {
+  position: relative;
+  isolation: isolate;
   display: grid;
-  gap: 5px;
-  min-height: 96px;
-  padding: 14px;
+  gap: 10px;
+  min-height: 168px;
+  overflow: visible;
+  padding: 22px;
   text-align: left;
+  transform: translateY(0);
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 220ms ease,
+    transform 220ms ease;
+}
+
+.choice::before {
+  content: "";
+  position: absolute;
+  inset: -18px;
+  z-index: -1;
+  border-radius: 16px;
+  background: radial-gradient(circle at 50% 50%, rgba(127, 86, 217, 0.38), transparent 68%);
+  filter: blur(18px);
+  opacity: 0;
+  transform: scale(0.88);
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+
+.choice:hover:not(:disabled),
+.choice:focus-visible {
+  border-color: rgba(127, 86, 217, 0.65);
+  box-shadow:
+    0 24px 54px rgba(37, 27, 89, 0.18),
+    0 0 0 1px rgba(127, 86, 217, 0.12);
+  transform: translateY(-10px);
+}
+
+.choice:hover:not(:disabled)::before,
+.choice:focus-visible::before {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .choice span {
-  font-size: 20px;
+  font-size: clamp(26px, 3vw, 34px);
   font-weight: 800;
 }
 
 .choice small {
   color: #667085;
+  font-size: 15px;
+  line-height: 1.35;
 }
 
 .choice.active {
@@ -206,5 +247,9 @@ dd {
 
   .choiceGrid {
     grid-template-columns: 1fr;
+  }
+
+  .choice {
+    min-height: 132px;
   }
 }
