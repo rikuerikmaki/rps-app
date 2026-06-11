@@ -118,11 +118,21 @@ h2 {
 .choice::before {
   content: "";
   position: absolute;
-  inset: -18px;
+  inset: -28px;
   z-index: -1;
-  border-radius: 16px;
-  background: radial-gradient(circle at 50% 50%, rgba(127, 86, 217, 0.38), transparent 68%);
-  filter: blur(18px);
+  border-radius: 24px;
+  padding: 28px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(127, 86, 217, 0.46), rgba(127, 86, 217, 0.22) 42%, transparent 72%);
+  filter: blur(16px);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
   opacity: 0;
   transform: scale(0.88);
   transition:
@@ -132,10 +142,10 @@ h2 {
 
 .choice:hover:not(:disabled),
 .choice:focus-visible {
-  border-color: rgba(127, 86, 217, 0.65);
+  border-color: rgba(23, 33, 43, 0.12);
   box-shadow:
-    0 24px 54px rgba(37, 27, 89, 0.18),
-    0 0 0 1px rgba(127, 86, 217, 0.12);
+    0 24px 54px rgba(22, 34, 48, 0.16),
+    0 0 0 1px rgba(255, 255, 255, 0.88) inset;
   transform: translateY(-10px);
 }
 
