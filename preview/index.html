@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rock Paper Scissors Battle Preview</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17212b;
+      --muted: #667085;
+      --line: #d9dee7;
+      --paper: #f9fbff;
+      --rock: #60758f;
+      --sheet: #f0c95f;
+      --scissors: #d75d6a;
+      --accent: #1f8a70;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 10%, rgba(31, 138, 112, 0.12), transparent 28rem),
+        linear-gradient(135deg, #f7fafc 0%, #eef3f8 45%, #fbfaf5 100%);
+    }
+
+    main {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 14px;
+      min-height: 22px;
+      text-align: right;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .chooser {
+      display: grid;
+      gap: 26px;
+      padding-top: 18px;
+    }
+
+    .carousel {
+      position: relative;
+      height: min(62vh, 510px);
+      min-height: 390px;
+      touch-action: pan-y;
+      user-select: none;
+    }
+
+    .choice-card {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: min(360px, 72vw);
+      height: min(450px, 64vh);
+      min-height: 320px;
+      padding: 26px;
+      border: 1px solid rgba(23, 33, 43, 0.12);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.84);
+      box-shadow: 0 24px 70px rgba(22, 34, 48, 0.14);
+      cursor: pointer;
+      transform: translate(-50%, -50%);
+      transition: transform 260ms ease, opacity 260ms ease, filter 260ms ease;
+      overflow: hidden;
+    }
+
+    .choice-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(150deg, rgba(255,255,255,0.1), rgba(255,255,255,0.64));
+      pointer-events: none;
+    }
+
+    .choice-card[data-position="center"] {
+      z-index: 3;
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+
+    .choice-card[data-position="left"] {
+      z-index: 2;
+      transform: translate(calc(-50% - min(310px, 42vw)), -50%) scale(0.72) rotate(-4deg);
+      opacity: 0.72;
+      filter: saturate(0.78);
+    }
+
+    .choice-card[data-position="right"] {
+      z-index: 2;
+      transform: translate(calc(-50% + min(310px, 42vw)), -50%) scale(0.72) rotate(4deg);
+      opacity: 0.72;
+      filter: saturate(0.78);
+    }
+
+    .choice-card h2 {
+      position: relative;
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+
+    .choice-card p {
+      position: relative;
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .symbol {
+      position: relative;
+      display: grid;
+      place-items: center;
+      height: calc(100% - 92px);
+      font-size: clamp(104px, 18vw, 180px);
+      filter: drop-shadow(0 18px 20px rgba(23, 33, 43, 0.18));
+    }
+
+    .choice-card.rock {
+      background: linear-gradient(155deg, #ffffff 0%, #dde6f1 100%);
+    }
+
+    .choice-card.paper {
+      background: linear-gradient(155deg, #ffffff 0%, #fff1bd 100%);
+    }
+
+    .choice-card.scissors {
+      background: linear-gradient(155deg, #ffffff 0%, #ffd8dc 100%);
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      color: var(--ink);
+      min-height: 42px;
+      padding: 0 14px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: white;
+    }
+
+    .arena-wrap {
+      display: grid;
+      gap: 14px;
+    }
+
+    .scorebar {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .score {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.78);
+      padding: 12px;
+    }
+
+    .score strong {
+      display: block;
+      font-size: 22px;
+    }
+
+    .score span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    canvas {
+      width: 100%;
+      height: min(68vh, 620px);
+      min-height: 430px;
+      border: 1px solid rgba(23, 33, 43, 0.14);
+      border-radius: 8px;
+      background: linear-gradient(180deg, #ffffff 0%, #edf5f7 100%);
+      box-shadow: 0 18px 44px rgba(22, 34, 48, 0.12);
+    }
+
+    @media (max-width: 720px) {
+      header,
+      .scorebar {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+
+      .status {
+        text-align: left;
+      }
+
+      .choice-card[data-position="left"] {
+        transform: translate(calc(-50% - 44vw), -50%) scale(0.62) rotate(-4deg);
+      }
+
+      .choice-card[data-position="right"] {
+        transform: translate(calc(-50% + 44vw), -50%) scale(0.62) rotate(4deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Rock Paper Scissors Battle</h1>
+      <div id="status" class="status">Swipe the cards, then click your fighter.</div>
+    </header>
+
+    <section id="chooser" class="chooser">
+      <div id="carousel" class="carousel" aria-label="Choose rock, paper, or scissors">
+        <article class="choice-card rock" data-item="rock">
+          <h2>Rock</h2>
+          <p>Breaks scissors. Gets wrapped by paper.</p>
+          <div class="symbol">●</div>
+        </article>
+        <article class="choice-card paper" data-item="paper">
+          <h2>Paper</h2>
+          <p>Wraps rock. Gets cut by scissors.</p>
+          <div class="symbol">▱</div>
+        </article>
+        <article class="choice-card scissors" data-item="scissors">
+          <h2>Scissors</h2>
+          <p>Cuts paper. Gets crushed by rock.</p>
+          <div class="symbol">✂</div>
+        </article>
+      </div>
+      <div class="actions">
+        <button id="prev" aria-label="Previous choice">‹</button>
+        <button id="play" class="primary">Play selected</button>
+        <button id="next" aria-label="Next choice">›</button>
+      </div>
+    </section>
+
+    <section id="arenaWrap" class="arena-wrap hidden">
+      <div class="scorebar">
+        <div class="score"><strong id="rockScore">10</strong><span>Rocks</span></div>
+        <div class="score"><strong id="paperScore">10</strong><span>Papers</span></div>
+        <div class="score"><strong id="scissorsScore">10</strong><span>Scissors</span></div>
+        <div class="score"><strong id="timeScore">0.0s</strong><span>Battle time</span></div>
+      </div>
+      <canvas id="arena"></canvas>
+      <div class="actions">
+        <button id="again">Choose again</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const items = ["rock", "paper", "scissors"];
+    const beats = { rock: "scissors", scissors: "paper", paper: "rock" };
+    const glyphs = { rock: "●", paper: "▱", scissors: "✂" };
+    const colors = { rock: "#60758f", paper: "#f0c95f", scissors: "#d75d6a" };
+    const cards = [...document.querySelectorAll(".choice-card")];
+    const chooser = document.querySelector("#chooser");
+    const arenaWrap = document.querySelector("#arenaWrap");
+    const statusEl = document.querySelector("#status");
+    const canvas = document.querySelector("#arena");
+    const ctx = canvas.getContext("2d");
+    const scores = {
+      rock: document.querySelector("#rockScore"),
+      paper: document.querySelector("#paperScore"),
+      scissors: document.querySelector("#scissorsScore"),
+      time: document.querySelector("#timeScore")
+    };
+
+    let selected = 0;
+    let fighters = [];
+    let running = false;
+    let startedAt = 0;
+    let transformations = 0;
+    let frameId = 0;
+    let pointerStart = null;
+
+    function renderCards() {
+      cards.forEach((card, index) => {
+        const delta = (index - selected + cards.length) % cards.length;
+        const position = delta === 0 ? "center" : delta === 1 ? "right" : "left";
+        card.dataset.position = position;
+      });
+    }
+
+    function rotate(direction) {
+      selected = (selected + direction + items.length) % items.length;
+      renderCards();
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const scale = window.devicePixelRatio || 1;
+      canvas.width = Math.floor(rect.width * scale);
+      canvas.height = Math.floor(rect.height * scale);
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    }
+
+    function startBattle() {
+      chooser.classList.add("hidden");
+      arenaWrap.classList.remove("hidden");
+      statusEl.textContent = `You chose ${items[selected]}. The arena decides the winner.`;
+      resizeCanvas();
+      transformations = 0;
+      fighters = [];
+      const rect = canvas.getBoundingClientRect();
+
+      items.forEach((item) => {
+        for (let i = 0; i < 10; i += 1) {
+          fighters.push({
+            item,
+            x: 30 + Math.random() * (rect.width - 60),
+            y: 30 + Math.random() * (rect.height - 60),
+            vx: (Math.random() - 0.5) * 2.8,
+            vy: (Math.random() - 0.5) * 2.8,
+            size: 15 + Math.random() * 7,
+            spin: Math.random() * Math.PI * 2,
+            rustle: Math.random() * Math.PI * 2
+          });
+        }
+      });
+
+      startedAt = performance.now();
+      running = true;
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(tick);
+    }
+
+    function winnerOf(a, b) {
+      if (a === b) return a;
+      return beats[a] === b ? a : b;
+    }
+
+    function updateFighter(fighter, width, height) {
+      fighter.rustle += 0.12;
+      fighter.spin += fighter.item === "scissors" ? 0.18 : 0.04;
+      fighter.vx += (Math.random() - 0.5) * 0.12;
+      fighter.vy += (Math.random() - 0.5) * 0.12;
+      const speed = Math.hypot(fighter.vx, fighter.vy) || 1;
+      const maxSpeed = fighter.item === "rock" ? 2.6 : fighter.item === "paper" ? 2.2 : 3.1;
+      if (speed > maxSpeed) {
+        fighter.vx = fighter.vx / speed * maxSpeed;
+        fighter.vy = fighter.vy / speed * maxSpeed;
+      }
+      fighter.x += fighter.vx;
+      fighter.y += fighter.vy;
+
+      if (fighter.x < fighter.size || fighter.x > width - fighter.size) {
+        fighter.vx *= -1;
+        fighter.x = Math.max(fighter.size, Math.min(width - fighter.size, fighter.x));
+      }
+      if (fighter.y < fighter.size || fighter.y > height - fighter.size) {
+        fighter.vy *= -1;
+        fighter.y = Math.max(fighter.size, Math.min(height - fighter.size, fighter.y));
+      }
+    }
+
+    function resolveCollisions() {
+      for (let i = 0; i < fighters.length; i += 1) {
+        for (let j = i + 1; j < fighters.length; j += 1) {
+          const a = fighters[i];
+          const b = fighters[j];
+          if (a.item === b.item) continue;
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const distance = Math.hypot(dx, dy);
+          if (distance < a.size + b.size + 4) {
+            const winner = winnerOf(a.item, b.item);
+            if (a.item !== winner) {
+              a.item = winner;
+              transformations += 1;
+            }
+            if (b.item !== winner) {
+              b.item = winner;
+              transformations += 1;
+            }
+            const push = distance || 1;
+            a.vx += dx / push * 0.45;
+            a.vy += dy / push * 0.45;
+            b.vx -= dx / push * 0.45;
+            b.vy -= dy / push * 0.45;
+          }
+        }
+      }
+    }
+
+    function drawFighter(fighter) {
+      ctx.save();
+      ctx.translate(fighter.x, fighter.y);
+      if (fighter.item === "paper") {
+        ctx.rotate(Math.sin(fighter.rustle) * 0.28);
+        ctx.fillStyle = colors.paper;
+        ctx.strokeStyle = "#9e7c19";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const wave = Math.sin(fighter.rustle) * 4;
+        ctx.moveTo(-fighter.size, -fighter.size + wave);
+        ctx.lineTo(fighter.size, -fighter.size - wave);
+        ctx.lineTo(fighter.size * 0.72, fighter.size + wave);
+        ctx.lineTo(-fighter.size * 0.86, fighter.size - wave);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else if (fighter.item === "rock") {
+        ctx.fillStyle = colors.rock;
+        ctx.strokeStyle = "#344457";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < 8; i += 1) {
+          const angle = i / 8 * Math.PI * 2;
+          const radius = fighter.size * (0.76 + 0.22 * Math.sin(fighter.rustle + i));
+          const x = Math.cos(angle) * radius;
+          const y = Math.sin(angle) * radius;
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        ctx.rotate(fighter.spin);
+        ctx.strokeStyle = colors.scissors;
+        ctx.lineWidth = 4;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(-fighter.size, -fighter.size);
+        ctx.lineTo(fighter.size, fighter.size);
+        ctx.moveTo(fighter.size, -fighter.size);
+        ctx.lineTo(-fighter.size, fighter.size);
+        ctx.stroke();
+        ctx.fillStyle = "white";
+        ctx.strokeStyle = colors.scissors;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(-fighter.size * 0.78, fighter.size * 0.78, 5, 0, Math.PI * 2);
+        ctx.arc(fighter.size * 0.78, fighter.size * 0.78, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function updateScores() {
+      const counts = { rock: 0, paper: 0, scissors: 0 };
+      fighters.forEach((fighter) => counts[fighter.item] += 1);
+      scores.rock.textContent = counts.rock;
+      scores.paper.textContent = counts.paper;
+      scores.scissors.textContent = counts.scissors;
+      scores.time.textContent = `${((performance.now() - startedAt) / 1000).toFixed(1)}s`;
+      return counts;
+    }
+
+    function tick() {
+      const rect = canvas.getBoundingClientRect();
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      fighters.forEach((fighter) => updateFighter(fighter, rect.width, rect.height));
+      resolveCollisions();
+      fighters.forEach(drawFighter);
+      const counts = updateScores();
+      const remaining = items.filter((item) => counts[item] > 0);
+
+      if (running && remaining.length === 1) {
+        running = false;
+        statusEl.textContent = `${remaining[0].toUpperCase()} wins after ${transformations} transformations.`;
+        return;
+      }
+
+      frameId = requestAnimationFrame(tick);
+    }
+
+    document.querySelector("#prev").addEventListener("click", () => rotate(-1));
+    document.querySelector("#next").addEventListener("click", () => rotate(1));
+    document.querySelector("#play").addEventListener("click", startBattle);
+    document.querySelector("#again").addEventListener("click", () => {
+      running = false;
+      cancelAnimationFrame(frameId);
+      arenaWrap.classList.add("hidden");
+      chooser.classList.remove("hidden");
+      statusEl.textContent = "Swipe the cards, then click your fighter.";
+    });
+
+    cards.forEach((card) => {
+      card.addEventListener("click", () => {
+        const item = card.dataset.item;
+        const index = items.indexOf(item);
+        if (index !== selected) {
+          selected = index;
+          renderCards();
+          return;
+        }
+        startBattle();
+      });
+    });
+
+    document.querySelector("#carousel").addEventListener("pointerdown", (event) => {
+      pointerStart = event.clientX;
+    });
+
+    document.querySelector("#carousel").addEventListener("pointerup", (event) => {
+      if (pointerStart === null) return;
+      const delta = event.clientX - pointerStart;
+      pointerStart = null;
+      if (Math.abs(delta) > 38) {
+        rotate(delta < 0 ? 1 : -1);
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      if (!arenaWrap.classList.contains("hidden")) {
+        resizeCanvas();
+      }
+    });
+
+    renderCards();
+  </script>
+</body>
+</html>
